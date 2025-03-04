@@ -13,6 +13,7 @@ import Clients from "./pages/clients/Clients";
 import CreateClient from "./pages/clients/CreateClient";
 import Chatbot from "./pages/chatbot/Chatbot";
 import ClientDetail from "./pages/clients/ClientDetail";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -22,34 +23,36 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Admin layout routes */}
-        <Route element={<AdminLayout />}>
-          {/* Dashboard */}
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+        {/* Protected routes with Admin layout */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AdminLayout />}>
+            {/* Dashboard */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Clients */}
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/clients/create" element={<CreateClient />} />
-          <Route path="/clients/:id" element={<ClientDetail />} />
+            {/* Clients */}
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/clients/create" element={<CreateClient />} />
+            <Route path="/clients/:id" element={<ClientDetail />} />
 
-          {/* AI Chat */}
-          <Route path="/ai-chat" element={<Chatbot />} />
+            {/* AI Chat */}
+            <Route path="/ai-chat" element={<Chatbot />} />
 
-          {/* Caseworker Dashboard */}
-          <Route
-            path="/caseworker-dashboard"
-            element={<CaseworkerDashboard />}
-          />
+            {/* Caseworker Dashboard */}
+            <Route
+              path="/caseworker-dashboard"
+              element={<CaseworkerDashboard />}
+            />
 
-          {/* Sessions */}
-          <Route path="/sessions" element={<Sessions />} />
-          <Route path="/sessions/:id" element={<SessionDetailPage />} />
+            {/* Sessions */}
+            <Route path="/sessions" element={<Sessions />} />
+            <Route path="/sessions/:id" element={<SessionDetailPage />} />
 
-          {/* Settings */}
-          <Route path="/settings/users" element={<Users />} />
-          <Route path="/settings/organization" element={<Organization />} />
-          <Route path="/settings/ai-training" element={<AITraining />} />
+            {/* Settings */}
+            <Route path="/settings/users" element={<Users />} />
+            <Route path="/settings/organization" element={<Organization />} />
+            <Route path="/settings/ai-training" element={<AITraining />} />
+          </Route>
         </Route>
       </Routes>
     </Router>
