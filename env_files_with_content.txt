@@ -1,0 +1,40 @@
+Contents of ./frontend/.env:
+REACT_APP_API_URL=http://localhost:5007
+
+
+
+Contents of ./backend/services/client-service/.env:
+MONGO_URI=mongodb://localhost:27017/supportsync-client
+PORT=5009
+
+
+Contents of ./backend/services/billing-service/.env:
+
+
+
+Contents of ./backend/services/chatbot-service/.env:
+MONGO_URI=mongodb://localhost:27017/supportsync-chatbot
+OPENAI_API_KEY=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
+PINECONE_API_KEY=pcsk_Qbyr2_74Uvgy54ZunMPKovoBaLPBpP4aR4sPeEWXjrgP3mbVtn1Dui3JdxXygzKGgJCVe
+PINECONE_ENV=us-east-1
+PINECONE_INDEX=supportsync-chatbot
+
+
+Contents of ./backend/services/transcription-service/.env:
+MONGO_URI=mongodb://localhost:27017/supportsync-sessions
+OPENAI_API_KEY=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
+
+
+
+Contents of ./backend/services/auth-service/.env:
+PORT=5007
+MONGO_URI=mongodb://localhost:27017/supportsync-auth
+JWT_SECRET=your_jwt_secret_123
+JWT_EXPIRES_IN=1d
+
+
+Contents of ./backend/gateway/.env:
+PORT=4000
+AUTH_SERVICE_URL=http://localhost:5000
+
+
