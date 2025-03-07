@@ -63,7 +63,14 @@ jobs:
     
     - name: Deploy ${{ matrix.service }}
       env:
-        SERVICE_ENV: ${{ secrets[format('{0}_ENV', matrix.service.upper().replace('-', '_'))] }}
+        SERVICE_ENV: >-
+          ${{ 
+            matrix.service == 'gateway' && secrets.GATEWAY_ENV ||
+            matrix.service == 'auth-service' && secrets.AUTH_SERVICE_ENV ||
+            matrix.service == 'transcription-service' && secrets.TRANSCRIPTION_SERVICE_ENV ||
+            matrix.service == 'client-service' && secrets.CLIENT_SERVICE_ENV ||
+            matrix.service == 'chatbot-service' && secrets.CHATBOT_SERVICE_ENV
+          }}
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
           # Specific path handling based on service
