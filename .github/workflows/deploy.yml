@@ -1,0 +1,59 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        service: 
+          - gateway
+          - auth-service
+          - transcription-service
+          - client-service
+          - chatbot-service
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install SSH Key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        known_hosts: unnecessary
+    
+    - name: Deploy ${{ matrix.service }}
+      env:
+        SERVICE_ENV: ${{ secrets[format('{0}_ENV', matrix.service.upper().replace('-', '_')) } }}
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          # Specific path handling based on service
+          if [ "${{ matrix.service }}" == "gateway" ]; then
+            cd ~/support-sync/backend/gateway
+          else
+            cd ~/support-sync/backend/services/${{ matrix.service }}
+          fi
+          
+          # Create .env file with GitHub secret
+          echo "$SERVICE_ENV" > .env
+          
+          # Pull latest code
+          git pull origin main
+          
+          # Install dependencies
+          npm install
+          
+          # Restart service using PM2
+          pm2 restart ${{ matrix.service }}
+        EOF
