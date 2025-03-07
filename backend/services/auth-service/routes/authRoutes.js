@@ -117,6 +117,7 @@ router.post("/login", async (req, res) => {
       token,
       userId: user._id.toString(), // Add this line
       role: user.systemRole,
+      version: "1.0.1",
       organizationId: user.organizationId,
     });
   } catch (err) {
