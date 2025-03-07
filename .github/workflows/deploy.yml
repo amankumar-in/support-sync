@@ -19,6 +19,7 @@ jobs:
     - name: Install Frontend Dependencies
       run: |
         cd frontend
+        CI=false npm run build
         npm install
     
     - name: Build Frontend
