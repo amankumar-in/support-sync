@@ -25,7 +25,9 @@ const Dashboard = () => {
           </Typography>
           {role === "admin" ? (
             <>
-              <Typography>Welcome, Admin. You have full access.</Typography>
+              <Typography>
+                Welcome, Admin User!. You have full access.
+              </Typography>
               <Button
                 variant="contained"
                 sx={{ mt: 2 }}
