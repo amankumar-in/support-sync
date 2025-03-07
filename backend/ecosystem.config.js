@@ -2,20 +2,22 @@ module.exports = {
   apps: [
     {
       name: "gateway",
-      script: "./gateway/server.js",
-      watch: true,
+      script: "server.js", // relative to cwd (./gateway)
+      cwd: "./gateway", // working directory is the gateway folder
+      watch: false,
       env: {
         NODE_ENV: "development",
-        PORT: 4000, // Local development
+        PORT: 4000,
       },
       env_production: {
         NODE_ENV: "production",
-        PORT: 8080, // Beanstalk production
+        PORT: 8080,
       },
     },
     {
       name: "auth-service",
-      script: "./services/auth-service/server.js",
+      script: "server.js", // relative to cwd (./services/auth-service)
+      cwd: "./services/auth-service",
       watch: true,
       env: {
         ...require("dotenv").config({ path: "./services/auth-service/.env" })
@@ -30,7 +32,8 @@ module.exports = {
     },
     {
       name: "transcription-service",
-      script: "./services/transcription-service/server.js",
+      script: "server.js", // relative to cwd (./services/transcription-service)
+      cwd: "./services/transcription-service",
       watch: true,
       env: {
         ...require("dotenv").config({
@@ -46,7 +49,8 @@ module.exports = {
     },
     {
       name: "client-service",
-      script: "./services/client-service/server.js",
+      script: "server.js", // relative to cwd (./services/client-service)
+      cwd: "./services/client-service",
       watch: true,
       env: {
         ...require("dotenv").config({ path: "./services/client-service/.env" })
@@ -61,7 +65,8 @@ module.exports = {
     },
     {
       name: "chatbot-service",
-      script: "./services/chatbot-service/server.js",
+      script: "server.js", // relative to cwd (./services/chatbot-service)
+      cwd: "./services/chatbot-service",
       watch: true,
       env: {
         ...require("dotenv").config({ path: "./services/chatbot-service/.env" })
