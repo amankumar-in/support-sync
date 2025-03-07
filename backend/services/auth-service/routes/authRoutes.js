@@ -67,7 +67,7 @@ router.post("/register", async (req, res) => {
       `✅ New user registered as ${systemRole} in ${organizationName} (ID: ${organizationId})`,
     );
     res.status(201).json({
-      message: "User registered successfully",
+      message: "New user registered successfully",
       systemRole,
       organizationId,
     });
