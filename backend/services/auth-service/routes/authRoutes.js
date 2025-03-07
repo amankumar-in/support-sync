@@ -59,6 +59,9 @@ router.post("/register", async (req, res) => {
       organizationId,
       createdAt: new Date(),
     });
+    console.log(
+      `✅ User created: ${firstName} ${lastName} (${email}) with role ${systemRole} in organization ${organizationId}`,
+    );
 
     console.log(
       `✅ New user registered as ${systemRole} in ${organizationName} (ID: ${organizationId})`,
