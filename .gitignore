@@ -7,3 +7,6 @@ github-actions-deploy-key.pub
 .env
 *.env
 !.env.example
+frontend/.env.production
+frontend/.env.development
+frontend/.env
