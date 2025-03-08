@@ -6,15 +6,137 @@ const path = require("path");
 const FormData = require("form-data");
 const mongoose = require("mongoose");
 const multer = require("multer");
+const AWS = require("aws-sdk");
+
 const Session = require("../models/Session");
 const User = require("../models/User");
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" });
 
-// ✅ Create a new session with audio & transcription
+// Configure AWS
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION || "us-east-1",
+});
+
+const s3 = new AWS.S3();
+
+// Debug AWS credentials
+console.log("AWS Config - Region:", process.env.AWS_REGION);
+console.log("AWS Config - Bucket:", process.env.S3_BUCKET_NAME);
+console.log(
+  "AWS Access Key ID starts with:",
+  process.env.AWS_ACCESS_KEY_ID
+    ? process.env.AWS_ACCESS_KEY_ID.substring(0, 5) + "..."
+    : "undefined",
+);
+console.log(
+  "AWS Secret Access Key set:",
+  process.env.AWS_SECRET_ACCESS_KEY ? "Yes" : "No",
+);
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log("Created uploads directory:", uploadDir);
+}
+
+// Configure multer for local storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+});
+
+// Function to upload file to S3 and return the key
+const uploadToS3 = async (file) => {
+  try {
+    console.log("Uploading file to S3:", file.path);
+
+    const fileContent = fs.readFileSync(file.path);
+    const fileName = path.basename(file.path);
+    const key = `audio-recordings/${fileName}`;
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+      Body: fileContent,
+      ContentType: file.mimetype || "audio/wav",
+    };
+
+    const result = await s3.upload(params).promise();
+    console.log("File uploaded to S3:", result.Key);
+
+    // Delete local file after successful upload
+    fs.unlinkSync(file.path);
+    console.log("Deleted local file:", file.path);
+
+    return result.Key;
+  } catch (error) {
+    console.error("S3 upload error:", error);
+    throw error;
+  }
+};
+
+// Test AWS connection
+console.log("Testing S3 connection...");
+s3.listBuckets((err, data) => {
+  if (err) {
+    console.error("S3 CONNECTION ERROR:", err);
+  } else {
+    console.log("S3 CONNECTION SUCCESS! Available buckets:");
+    data.Buckets.forEach((bucket) => {
+      console.log(`- ${bucket.Name}`);
+      if (bucket.Name === process.env.S3_BUCKET_NAME) {
+        console.log(`✅ Found target bucket: ${process.env.S3_BUCKET_NAME}`);
+      }
+    });
+  }
+});
+
+// Test upload endpoint
+router.post("/test-upload", upload.single("audio"), async (req, res) => {
+  try {
+    console.log("Test upload endpoint hit");
+    console.log("Headers:", req.headers);
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    console.log("File received locally:", req.file);
+
+    // Upload file to S3
+    const s3Key = await uploadToS3(req.file);
+
+    res.json({
+      success: true,
+      message: "File uploaded to S3 successfully",
+      key: s3Key,
+    });
+  } catch (error) {
+    console.error("Test upload error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a new session with audio & transcription
 router.post("/", upload.single("audio"), async (req, res) => {
   try {
+    console.log("Creating new session with body:", req.body);
+    console.log("File upload info:", req.file);
+
     let {
       clientName,
       sessionLength,
@@ -30,67 +152,73 @@ router.post("/", upload.single("audio"), async (req, res) => {
       return res.status(400).json({ message: "Organization ID is required" });
     }
 
-    // ✅ Convert sessionLength to Number
+    // Convert sessionLength to Number
     sessionLength = Number(sessionLength);
     if (isNaN(sessionLength)) {
       return res.status(400).json({ message: "Invalid session length" });
     }
 
-    // ✅ Convert caseWorker to ObjectId if valid
+    // Convert caseWorker to ObjectId if valid
     if (mongoose.Types.ObjectId.isValid(caseWorker)) {
       caseWorker = new mongoose.Types.ObjectId(caseWorker);
     } else {
       caseWorker = null;
     }
 
-    // ✅ Parse tags if it's a JSON string
+    // Parse tags if it's a JSON string
     if (typeof tags === "string") {
       try {
         tags = JSON.parse(tags);
       } catch (error) {
-        return res.status(400).json({ message: "Invalid tags format" });
+        tags = [];
       }
     }
 
-    // ✅ Step 1: Save session details first (without transcription)
-    // Before creating the session, prepare the file path with extension if a file exists
+    // Handle file upload to S3 if present
     let audioFilePath = null;
     if (req.file) {
-      const fileExtension = path.extname(req.file.originalname).toLowerCase();
-      audioFilePath = `${req.file.path}${fileExtension}`;
+      try {
+        audioFilePath = await uploadToS3(req.file);
+      } catch (error) {
+        console.error("S3 upload error:", error);
+        return res.status(500).json({ message: "Error uploading file to S3" });
+      }
     }
 
+    // Create and save session
     const session = new Session({
-      clientName: clientName?.replace(/^"(.*)"$/, "$1") || "No name", // ✅ Removes extra quotes
+      clientName: clientName || "No name",
       sessionLength,
       caseWorker,
-      caseWorkerName: caseWorkerName?.replace(/^"(.*)"$/, "$1") || "", // ✅ Removes extra quotes
+      caseWorkerName: caseWorkerName || "",
       tags: Array.isArray(tags) ? tags : [],
-      keyNote: keyNote?.replace(/^"(.*)"$/, "$1") || "", // ✅ Removes extra quotes
+      keyNote: keyNote || "",
       date: date || new Date(),
-      organizationId: organizationId?.replace(/^"(.*)"$/, "$1"), // ✅ Removes extra quotes
+      organizationId,
       audioFilePath: audioFilePath,
       transcription: "",
     });
 
     const savedSession = await session.save();
+    console.log("Session saved to database:", savedSession._id);
 
-    // ✅ Step 2: Process audio file (if uploaded)
-    if (req.file) {
-      console.log("Received audio file:", req.file.path);
-
-      const fileExtension = path.extname(req.file.originalname).toLowerCase();
-      const newFilePath = `${req.file.path}${fileExtension}`;
-      fs.renameSync(req.file.path, newFilePath); // ✅ Rename for proper extension
-
-      const audioFile = fs.createReadStream(newFilePath);
-      const formData = new FormData();
-      formData.append("file", audioFile);
-      formData.append("model", "whisper-1");
-      formData.append("language", "en");
-      formData.append("temperature", "0");
-
+    // Process audio for transcription if uploaded and OpenAI key available
+    if (audioFilePath && process.env.OPENAI_API_KEY) {
       try {
+        // Get the file from S3 for transcription
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: audioFilePath,
+        };
+
+        const s3Object = await s3.getObject(params).promise();
+        console.log("S3 audio file retrieved for transcription");
+
+        const formData = new FormData();
+        formData.append("file", s3Object.Body, "recording.wav");
+        formData.append("model", "whisper-1");
+        formData.append("language", "en");
+
         const response = await axios.post(
           "https://api.openai.com/v1/audio/transcriptions",
           formData,
@@ -102,37 +230,34 @@ router.post("/", upload.single("audio"), async (req, res) => {
           },
         );
 
-        // ✅ Step 3: Update session with transcription result
         savedSession.transcription = response.data.text;
         await savedSession.save();
+        console.log("Transcription saved");
 
         res.status(201).json({
           message: "Session saved with transcription",
           session: savedSession,
         });
       } catch (error) {
-        console.error(
-          "Transcription Error:",
-          error.response?.data || error.message,
-        );
-        res.status(500).json({
-          error: "Transcription failed, but session was saved",
+        console.error("Transcription error:", error.message);
+        res.status(201).json({
+          message: "Transcription failed, but session was saved",
           session: savedSession,
         });
       }
     } else {
       res.status(201).json({
-        message: "Session saved without audio",
+        message: "Session saved without audio or transcription",
         session: savedSession,
       });
     }
   } catch (error) {
     console.error("Error creating session:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error: " + error.message });
   }
 });
 
-// ✅ Get all sessions for a user's organization or client if mentioned
+// Get all sessions for a user's organization or client
 router.get("/", async (req, res) => {
   try {
     const { organizationId, clientId } = req.query;
@@ -157,7 +282,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ Get a single session by ID
+// Get a single session by ID
 router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
   try {
     const session = await Session.findById(req.params.id);
@@ -171,8 +296,7 @@ router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
   }
 });
 
-// ✅ Update a session
-// ✅ Update a session
+// Update a session
 router.put("/:id([0-9a-fA-F]{24})", async (req, res) => {
   try {
     const {
@@ -182,15 +306,18 @@ router.put("/:id([0-9a-fA-F]{24})", async (req, res) => {
       keyNote,
       caseWorker,
       caseWorkerName,
-      clientId, // <--- Destructure here
+      clientId,
     } = req.body;
 
     const updateData = {
       clientName,
-      sessionLength,
       tags,
       keyNote,
     };
+
+    if (sessionLength) {
+      updateData.sessionLength = sessionLength;
+    }
 
     if (clientId && mongoose.Types.ObjectId.isValid(clientId)) {
       updateData.clientId = clientId;
@@ -221,13 +348,31 @@ router.put("/:id([0-9a-fA-F]{24})", async (req, res) => {
   }
 });
 
-// ✅ Delete a session
+// Delete a session
 router.delete("/:id([0-9a-fA-F]{24})", async (req, res) => {
   try {
-    const deletedSession = await Session.findByIdAndDelete(req.params.id);
-    if (!deletedSession) {
+    const session = await Session.findById(req.params.id);
+    if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
+
+    // Delete the associated S3 file if it exists
+    if (session.audioFilePath) {
+      try {
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: session.audioFilePath,
+        };
+
+        await s3.deleteObject(params).promise();
+        console.log(`Deleted S3 object: ${session.audioFilePath}`);
+      } catch (s3Error) {
+        console.error("Error deleting S3 object:", s3Error);
+        // Continue with session deletion even if S3 deletion fails
+      }
+    }
+
+    const deletedSession = await Session.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Session deleted successfully" });
   } catch (error) {
     console.error("Error deleting session:", error);
@@ -236,8 +381,6 @@ router.delete("/:id([0-9a-fA-F]{24})", async (req, res) => {
 });
 
 // Get audio file for a session
-// In sessionRoutes.js
-
 router.get("/audio/:id([0-9a-fA-F]{24})", async (req, res) => {
   try {
     const session = await Session.findById(req.params.id);
@@ -245,27 +388,24 @@ router.get("/audio/:id([0-9a-fA-F]{24})", async (req, res) => {
       return res.status(404).json({ message: "Audio not found" });
     }
 
-    console.log("Current working directory:", process.cwd());
-    console.log("Stored audio file path:", session.audioFilePath);
+    // Generate a signed URL for S3 object
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: session.audioFilePath,
+      Expires: 60 * 5, // URL expires in 5 minutes
+    };
 
-    // Try multiple path resolutions
-    const possiblePaths = [
-      path.resolve(session.audioFilePath),
-      path.join(process.cwd(), session.audioFilePath),
-      path.join(process.cwd(), "uploads", path.basename(session.audioFilePath)),
-    ];
-
-    const existingPath = possiblePaths.find(fs.existsSync);
-
-    if (!existingPath) {
-      return res.status(404).json({
-        message: "Audio file not found",
-        possiblePaths: possiblePaths,
-        storedPath: session.audioFilePath,
-      });
-    }
-
-    res.download(existingPath);
+    s3.getSignedUrl("getObject", params, (err, url) => {
+      if (err) {
+        console.error("Error generating signed URL:", err);
+        return res.status(500).json({ message: "Error retrieving audio" });
+      }
+      console.log(
+        "Generated signed URL (truncated):",
+        url.substring(0, 50) + "...",
+      );
+      res.json({ audioUrl: url });
+    });
   } catch (error) {
     console.error("Error retrieving audio:", error);
     res.status(500).json({ message: "Server error" });

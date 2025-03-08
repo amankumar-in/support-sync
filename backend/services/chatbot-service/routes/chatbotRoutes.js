@@ -55,6 +55,15 @@ router.post("/", async (req, res) => {
     });
 
     console.log("Pinecone results:", JSON.stringify(results.matches, null, 2));
+    console.log(`Found ${results.matches.length} matching documents`);
+
+    // Handle case when no training data exists
+    if (results.matches.length === 0) {
+      return res.json({
+        response:
+          "I don't have any specific information for your organization yet. Try providing more context for better assistance or contact your administrator.",
+      });
+    }
 
     // 4) Gather relevant text from Pinecone results
     const relevantText = results.matches
@@ -64,8 +73,13 @@ router.post("/", async (req, res) => {
       .join("\n\n")
       .substring(0, 4000);
 
+    // Set up a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("OpenAI request timed out")), 30000); // 30 second timeout
+    });
+
     // 5) Generate a chat completion with the retrieved context
-    const aiResponse = await openai.chat.completions.create({
+    const aiResponsePromise = openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
@@ -82,14 +96,21 @@ router.post("/", async (req, res) => {
       temperature: 0.7,
     });
 
+    // Race between OpenAI request and timeout
+    const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]);
+
     const finalAnswer =
       aiResponse.choices[0]?.message?.content ||
       "I'm sorry, I couldn't generate a response.";
 
     res.json({ response: finalAnswer });
   } catch (error) {
-    console.error("Chatbot error:", error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Chatbot error:", error.message || error);
+    // Send a friendly error message to the client
+    res.json({
+      response:
+        "I'm sorry, I encountered an issue while processing your request. Please try again in a moment.",
+    });
   }
 });
 

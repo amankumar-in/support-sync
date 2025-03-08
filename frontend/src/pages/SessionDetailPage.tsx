@@ -58,17 +58,16 @@ const SessionDetailPage: React.FC = () => {
             );
             const audioResponse = await axios.get(
               `${TRANSCRIPTION_API_URL}/api/sessions/audio/${sessionData._id}`,
-              { responseType: "blob" },
             );
             console.log("Audio response:", audioResponse);
 
-            const audioBlob = new Blob([audioResponse.data], {
-              type: "audio/wav",
-            });
-            console.log("Audio blob size:", audioBlob.size);
-
-            const audioUrl = URL.createObjectURL(audioBlob);
-            setAudioUrl(audioUrl);
+            // Set the audio URL directly from the signed URL
+            if (audioResponse.data && audioResponse.data.audioUrl) {
+              setAudioUrl(audioResponse.data.audioUrl);
+              console.log("Set audio URL from signed URL");
+            } else {
+              console.error("No audio URL in response:", audioResponse.data);
+            }
           } catch (audioError: unknown) {
             if (axios.isAxiosError(audioError)) {
               console.error(
@@ -93,8 +92,9 @@ const SessionDetailPage: React.FC = () => {
 
     // Cleanup function
     return () => {
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      if (audioPlayer) {
+        audioPlayer.pause();
+        setAudioPlayer(null);
       }
     };
   }, [id]);
@@ -126,6 +126,7 @@ const SessionDetailPage: React.FC = () => {
   const downloadAudio = () => {
     if (!audioUrl) return;
 
+    // Create a temporary link and trigger download
     const link = document.createElement("a");
     link.href = audioUrl;
     link.download = `session_${id}.wav`;
@@ -170,7 +171,7 @@ const SessionDetailPage: React.FC = () => {
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6">Session Details</Typography>
-          <Typography>Length: {session.sessionLength} minutes</Typography>
+          <Typography>Length: {session.sessionLength} seconds</Typography>
           <Typography>
             Date: {new Date(session.date).toLocaleString()}
           </Typography>

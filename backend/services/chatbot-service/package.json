@@ -13,11 +13,13 @@
   "description": "",
   "dependencies": {
     "@pinecone-database/pinecone": "^5.1.0",
+    "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mammoth": "^1.9.0",
     "mongoose": "^8.11.0",
+    "multer-s3": "^3.0.1",
     "openai": "^4.86.1",
     "pdf-parse": "^1.1.1",
     "textract": "^2.5.0"

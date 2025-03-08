@@ -33,7 +33,14 @@ app.use("/api/sessions", sessionRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "Transcription service is running" });
 });
-
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Express Error:", err);
+  res.status(500).json({
+    error: err.message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
 // Start server
 app.listen(PORT, () =>
   console.log(`Transcription service running on port ${PORT}`),
