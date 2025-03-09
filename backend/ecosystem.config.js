@@ -1,17 +1,23 @@
-module.exports = {
+Copymodule.exports = {
   apps: [
     {
       name: "gateway",
-      script: "server.js", // relative to cwd (./gateway)
-      cwd: "./gateway", // working directory is the gateway folder
+      script: "server.js",
+      cwd: "./gateway",
       watch: false,
       env: {
+        // Development environment
+        ...require("dotenv").config({
+          path: "./gateway/.env.development",
+        }).parsed,
         NODE_ENV: "development",
-        PORT: 4000,
       },
       env_production: {
+        // Production environment
+        ...require("dotenv").config({
+          path: "./gateway/.env.production",
+        }).parsed,
         NODE_ENV: "production",
-        PORT: 8080,
       },
     },
     {

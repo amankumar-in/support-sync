@@ -10,3 +10,6 @@ github-actions-deploy-key.pub
 frontend/.env.production
 frontend/.env.development
 frontend/.env
+backend/gateway/.env.local
+backend/gateway/.env.production
+backend/gateway/.env.development
