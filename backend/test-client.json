@@ -1,0 +1,16 @@
+{
+  "type": "Child",
+  "personalInfo": {
+    "name": "Test Client",
+    "age": "10",
+    "contactInfo": {
+      "address": "",
+      "phone": "",
+      "email": ""
+    }
+  },
+  "caseDetails": {
+    "caseStatus": "Active"
+  },
+  "organization": "126d4ec9-8c5b-42c4-8846-ebdf2ccb20f2"
+}

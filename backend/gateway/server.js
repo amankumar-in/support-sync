@@ -73,6 +73,29 @@ const transcriptionServiceProxy = createProxyMiddleware({
   pathRewrite: {
     "^/api/sessions": "/api/sessions", // Generic rewrite for transcription routes
   },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(
+      "=================== GATEWAY TRANSCRIPTION PROXY DEBUG ===================",
+    );
+    console.log(`Original Request Method: ${req.method}`);
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Proxy Path: ${proxyReq.path}`);
+    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
+    console.log(`Request Body: ${JSON.stringify(req.body)}`);
+    console.log(
+      "==============================================================",
+    );
+
+    const bodyData = JSON.stringify(req.body);
+    proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+    proxyReq.write(bodyData);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Transcription Proxy Response Status: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error("Transcription Proxy Error Details:", err);
+  },
 });
 
 const clientServiceProxy = createProxyMiddleware({
@@ -81,6 +104,30 @@ const clientServiceProxy = createProxyMiddleware({
   pathRewrite: {
     "^/api/clients": "/api/clients", // Generic rewrite for client routes
   },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(
+      "=================== GATEWAY CLIENT PROXY DEBUG ===================",
+    );
+    console.log(`Original Request Method: ${req.method}`);
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Proxy Path: ${proxyReq.path}`);
+    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
+    console.log(`Request Body: ${JSON.stringify(req.body)}`);
+    console.log(
+      "==============================================================",
+    );
+
+    // This is the key part that handles POST body data properly
+    const bodyData = JSON.stringify(req.body);
+    proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+    proxyReq.write(bodyData);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Client Proxy Response Status: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error("Client Proxy Error Details:", err);
+  },
 });
 
 const chatbotServiceProxy = createProxyMiddleware({
@@ -88,6 +135,38 @@ const chatbotServiceProxy = createProxyMiddleware({
   changeOrigin: true,
   pathRewrite: {
     "^/api/chatbot": "/api/chatbot", // Generic rewrite for chatbot routes
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(
+      "=================== GATEWAY CHATBOT PROXY DEBUG ===================",
+    );
+    console.log(`Original Request Method: ${req.method}`);
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Proxy Path: ${proxyReq.path}`);
+    console.log(`Content-Type: ${req.headers["content-type"] || "none"}`);
+
+    // Only attempt to rewrite the body for JSON requests
+    if (
+      req.method === "POST" &&
+      req.headers["content-type"] &&
+      req.headers["content-type"].includes("application/json") &&
+      req.body
+    ) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+    // For multipart/form-data, no additional processing is needed as http-proxy-middleware
+    // handles this case correctly by default
+    console.log(
+      "==============================================================",
+    );
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Chatbot Proxy Response Status: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error("Chatbot Proxy Error Details:", err);
   },
 });
 

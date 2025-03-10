@@ -94,7 +94,8 @@ const ClientDetail = () => {
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5009/api/clients/${id}`);
+      const API_URL = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${API_URL}/api/clients/${id}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch client details");
@@ -102,8 +103,6 @@ const ClientDetail = () => {
 
       const data = await response.json();
       setClient(data);
-
-      // Set loading to false after getting client details
       setLoading(false);
     } catch (error) {
       console.error("Error fetching client details:", error);

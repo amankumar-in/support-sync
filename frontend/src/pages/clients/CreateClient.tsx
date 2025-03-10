@@ -197,6 +197,11 @@ const CreateClient = () => {
     fetchUsers();
   }, []);
 
+  // Add this near the top of your CreateClient component function, before the return statement
+  useEffect(() => {
+    console.log("REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
+  }, []);
+
   const handleInputChange = (field: string, value: string) => {
     // For nested objects like personalInfo.name
     if (field.includes(".")) {
@@ -378,6 +383,7 @@ const CreateClient = () => {
   };
 
   const handleSubmit = async () => {
+    console.log("API URL:", process.env.REACT_APP_API_URL);
     // Create a copy of the form data
     const submitData = {
       ...formData,
@@ -390,13 +396,16 @@ const CreateClient = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5009/api/clients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/api/clients`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(submitData),
         },
-        body: JSON.stringify(submitData),
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();

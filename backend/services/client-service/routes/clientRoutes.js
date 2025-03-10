@@ -63,22 +63,45 @@ router.post("/", async (req, res) => {
 
     if (organizationUuid) {
       const lookupUrl = `http://localhost:5007/api/auth/organizations/lookup/${organizationUuid}`;
-      const orgResponse = await fetch(lookupUrl);
-      if (!orgResponse.ok) {
-        console.error(
-          "Organization not found in auth-service for UUID:",
-          organizationUuid,
-        );
-        return res
-          .status(400)
-          .json({ message: "Organization not found with the provided UUID" });
-      }
+      console.log("Attempting to fetch from URL:", lookupUrl);
 
-      const { _id } = await orgResponse.json();
-      organizationId = _id;
-      console.log(
-        `Found organization with _id: ${organizationId} for UUID: ${organizationUuid}`,
-      );
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const orgResponse = await fetch(lookupUrl, {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        console.log("Fetch response status:", orgResponse.status);
+
+        if (!orgResponse.ok) {
+          console.error(
+            "Organization not found in auth-service for UUID:",
+            organizationUuid,
+            "Status:",
+            orgResponse.status,
+          );
+          return res
+            .status(400)
+            .json({ message: "Organization not found with the provided UUID" });
+        }
+
+        const orgData = await orgResponse.json();
+        console.log("Organization response data:", orgData);
+        const { _id } = orgData;
+        organizationId = _id;
+        console.log(
+          `Found organization with _id: ${organizationId} for UUID: ${organizationUuid}`,
+        );
+      } catch (fetchError) {
+        console.error("Fetch operation error:", fetchError);
+        return res.status(500).json({
+          message: "Error connecting to auth service",
+          error: fetchError.message,
+        });
+      }
     } else {
       return res.status(400).json({ message: "Organization UUID is required" });
     }
@@ -161,5 +184,8 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
+router.get("/test", (req, res) => {
+  console.log("Test endpoint hit");
+  res.status(200).json({ message: "Test endpoint is working" });
+});
 module.exports = router;

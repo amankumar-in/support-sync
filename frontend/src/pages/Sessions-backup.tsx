@@ -138,8 +138,8 @@ const SessionDetailsForm = ({
   const fetchClients = async () => {
     setIsLoading(true);
     try {
-      const CLIENT_API_URL = "http://localhost:5009"; // Client service port
-      const response = await axios.get(`${CLIENT_API_URL}/api/clients`);
+      const API_URL = process.env.REACT_APP_API_URL;
+      const response = await axios.get(`${API_URL}/api/clients`);
       console.log("Fetched clients:", response.data);
       setClients(response.data);
       setFilteredClients(response.data);

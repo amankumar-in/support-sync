@@ -80,7 +80,7 @@ const Clients = () => {
       );
 
       const response = await fetch(
-        `http://localhost:5009/api/clients?type=${clientType}&organizationId=${organizationId}`,
+        `${process.env.REACT_APP_API_URL}/api/clients?type=${clientType}&organizationId=${organizationId}`,
       );
 
       const data = await response.json();
