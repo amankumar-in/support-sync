@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
     let organizationId;
 
     if (organizationUuid) {
-      const lookupUrl = `http://localhost:5007/api/auth/organizations/lookup/${organizationUuid}`;
+      const lookupUrl = `${process.env.AUTH_SERVICE_URL}/api/auth/organizations/lookup/${organizationId}`;
       console.log("Attempting to fetch from URL:", lookupUrl);
 
       try {
