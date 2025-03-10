@@ -1,4 +1,4 @@
 1. react app is created
 2. auth services are setup and gatebway is setup
 tested by sending curl request
-env updated
+env updated uri
