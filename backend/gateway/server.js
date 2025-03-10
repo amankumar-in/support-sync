@@ -6,11 +6,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 // Load environment variables based on NODE_ENV
-if (process.env.NODE_ENV === "production") {
-  dotenv.config({ path: path.join(__dirname, ".env.production") });
-} else {
-  dotenv.config({ path: path.join(__dirname, ".env.development") });
-}
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 const PORT = process.env.PORT || 5001;

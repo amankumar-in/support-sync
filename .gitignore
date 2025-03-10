@@ -13,3 +13,5 @@ frontend/.env
 backend/gateway/.env.local
 backend/gateway/.env.production
 backend/gateway/.env.development
+backend/gateway/.env.development-backup
+backend/gateway/.env.production-backup
