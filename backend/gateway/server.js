@@ -18,8 +18,15 @@ app.use(express.json()); // Parse JSON bodies
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      "https://supportsync.co",
+      "http://supportsync-frontend-js-01.s3-website-us-east-1.amazonaws.com",
+      process.env.FRONTEND_URL,
+    ],
+
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
