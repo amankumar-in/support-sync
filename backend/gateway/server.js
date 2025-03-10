@@ -1,89 +1,115 @@
-// In backend/gateway/server.js
-
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const cors = require("cors");
+const morgan = require("morgan");
 const path = require("path");
+const dotenv = require("dotenv");
 
-// Environment-aware service URLs
-const AUTH_SERVICE = process.env.AUTH_SERVICE || "http://localhost:5007";
-const TRANSCRIPTION_SERVICE =
-  process.env.TRANSCRIPTION_SERVICE || "http://localhost:5008";
-const CLIENT_SERVICE = process.env.CLIENT_SERVICE || "http://localhost:5009";
-const CHATBOT_SERVICE = process.env.CHATBOT_SERVICE || "http://localhost:5010";
+// Load environment variables based on NODE_ENV
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: path.join(__dirname, ".env.production") });
+} else {
+  dotenv.config({ path: path.join(__dirname, ".env.development") });
+}
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-// CORS configuration remains the same
+// Middleware
+app.use(morgan("dev")); // Logging
+app.use(express.json()); // Parse JSON bodies
+
+// CORS configuration
 app.use(
   cors({
-    origin: [
-      "http://supportsync-frontend-js-01.s3-website-us-east-1.amazonaws.com",
-      "http://localhost:3000",
-      "https://supportsync.co",
-    ],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Updated proxy middleware with path rewriting
-app.use(
-  "/api/auth",
-  createProxyMiddleware({
-    target: AUTH_SERVICE,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/auth": "",
-    },
-  }),
-);
-
-app.use(
-  "/api/transcription",
-  createProxyMiddleware({
-    target: TRANSCRIPTION_SERVICE,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/transcription": "",
-    },
-  }),
-);
-
-app.use(
-  "/api/client",
-  createProxyMiddleware({
-    target: CLIENT_SERVICE,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/client": "",
-    },
-  }),
-);
-
-app.use(
-  "/api/chatbot",
-  createProxyMiddleware({
-    target: CHATBOT_SERVICE,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/chatbot": "",
-    },
-  }),
-);
-
-// Health check route remains the same
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK", message: "Gateway service is running" });
+// Health check route
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "OK", message: "Gateway is running" });
 });
 
-// Start the server
+// Proxy Middleware Configuration
+const authServiceProxy = createProxyMiddleware({
+  target: process.env.AUTH_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api/auth": "/api/auth", // Generic rewrite for all auth routes
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Proxy Path: ${proxyReq.path}`);
+    console.log(`Proxy Host: ${proxyReq.getHeader("host")}`);
+
+    // Log request body
+    const bodyData = JSON.stringify(req.body);
+    proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+    proxyReq.write(bodyData);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Proxy Response Status: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error("Proxy Error Details:", err);
+  },
+});
+
+const transcriptionServiceProxy = createProxyMiddleware({
+  target: process.env.TRANSCRIPTION_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api/sessions": "/api/sessions", // Generic rewrite for transcription routes
+  },
+});
+
+const clientServiceProxy = createProxyMiddleware({
+  target: process.env.CLIENT_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api/clients": "/api/clients", // Generic rewrite for client routes
+  },
+});
+
+const chatbotServiceProxy = createProxyMiddleware({
+  target: process.env.CHATBOT_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api/chatbot": "/api/chatbot", // Generic rewrite for chatbot routes
+  },
+});
+
+// Routes
+app.use("/api/auth", authServiceProxy);
+app.use("/api/chatbot", chatbotServiceProxy);
+app.use("/api/clients", clientServiceProxy);
+app.use("/api/sessions", transcriptionServiceProxy);
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    status: "error",
+    message: "Something went wrong on the gateway",
+    error:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Internal Server Error",
+  });
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Gateway server running on port ${PORT}`);
+  console.log(
+    `Gateway running on port ${PORT} in ${process.env.NODE_ENV} mode`,
+  );
+  console.log(`Auth Service: ${process.env.AUTH_SERVICE_URL}`);
+  console.log(
+    `Transcription Service: ${process.env.TRANSCRIPTION_SERVICE_URL}`,
+  );
+  console.log(`Client Service: ${process.env.CLIENT_SERVICE_URL}`);
+  console.log(`Chatbot Service: ${process.env.CHATBOT_SERVICE_URL}`);
+  console.log("Proxying /api/auth to:", process.env.AUTH_SERVICE_URL);
 });

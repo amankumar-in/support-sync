@@ -79,6 +79,7 @@ router.post("/register", async (req, res) => {
 
 // ✅ LOGIN A USER
 router.post("/login", async (req, res) => {
+  console.log("Received login request:", req.body);
   try {
     console.log("LOGIN REQUEST BODY:", req.body);
     const { email, password } = req.body;
