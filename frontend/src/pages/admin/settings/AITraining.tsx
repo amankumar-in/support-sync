@@ -83,7 +83,7 @@ const AITraining = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5010/api/ai-training/${organizationId}`,
+        `${process.env.REACT_APP_API_URL}/api/ai-training/${organizationId}`,
       );
       const data = await response.json();
       setTrainingData(data);
@@ -146,7 +146,7 @@ const AITraining = () => {
 
   const handleDeleteTraining = async (id: string) => {
     try {
-      await fetch(`http://localhost:5010/api/ai-training/${id}`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/ai-training/${id}`, {
         method: "DELETE",
       });
       fetchTrainingData();

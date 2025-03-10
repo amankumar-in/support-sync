@@ -13,7 +13,8 @@ import {
 } from "@mui/material";
 import { PlayArrow, Pause, Download } from "@mui/icons-material";
 
-const TRANSCRIPTION_API_URL = "http://localhost:5008";
+const TRANSCRIPTION_API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5008";
 
 interface Session {
   _id: string;

@@ -82,7 +82,7 @@ const uploadToS3 = async (file) => {
 };
 
 // Point this to your auth-service
-const AUTH_SERVICE_URL = "http://localhost:5007/api/auth";
+const AUTH_SERVICE_URL = `${process.env.REACT_APP_API_URL}/api/auth`;
 
 // GET AI Training data for a specific organization (by UUID)
 router.get("/:organizationId", async (req, res) => {

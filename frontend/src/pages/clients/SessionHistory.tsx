@@ -59,7 +59,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
     const fetchSessions = async () => {
       try {
         setLoading(true);
-        const url = `http://localhost:5008/api/sessions?clientId=${clientId}&organizationId=${organizationUuid}`;
+        const url = `${process.env.REACT_APP_API_URL}/api/sessions?clientId=${clientId}&organizationId=${organizationUuid}`;
         console.log("Fetching sessions with URL:", url);
 
         const response = await fetch(url);
@@ -101,7 +101,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
     try {
       // Fetch audio file
       const audioResponse = await axios.get(
-        `http://localhost:5008/api/sessions/audio/${session._id}`,
+        `${process.env.REACT_APP_API_URL}/api/sessions/audio/${session._id}`,
         { responseType: "blob" },
       );
 
@@ -133,7 +133,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
 
     try {
       const audioResponse = await axios.get(
-        `http://localhost:5008/api/sessions/audio/${session._id}`,
+        `${process.env.REACT_APP_API_URL}/api/sessions/audio/${session._id}`,
         { responseType: "blob" },
       );
 

@@ -20,7 +20,8 @@ import {
   MenuItem,
 } from "@mui/material";
 // Set baseURL for all requests if your React app is on a different port
-axios.defaults.baseURL = "http://localhost:5007";
+axios.defaults.baseURL =
+  process.env.REACT_APP_API_URL || "http://localhost:5007";
 
 const adminId = localStorage.getItem("userId");
 console.log("🆔 Admin ID from localStorage:", adminId);
@@ -80,7 +81,7 @@ const Users = () => {
     try {
       console.log("🔄 Sending request with adminId:", adminId);
       const response = await axios.post(
-        "http://localhost:5007/api/auth/add-user",
+        `${process.env.REACT_APP_API_URL}/api/auth/add-user`,
         {
           ...formData,
           adminId: adminId, // Use the adminId from this function scope

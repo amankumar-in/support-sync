@@ -190,7 +190,8 @@ const SessionDetailsForm = ({
 
   const fetchUserInfo = async (userId: string) => {
     try {
-      const AUTH_API_URL = "http://localhost:5007"; // Corrected port
+      const AUTH_API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5007"; // Corrected port
       const response = await axios.get(
         `${AUTH_API_URL}/api/auth/user/${userId}`,
       );
@@ -251,7 +252,8 @@ const SessionDetailsForm = ({
 
       if (userId) {
         try {
-          const AUTH_API_URL = "http://localhost:5007";
+          const AUTH_API_URL =
+            process.env.REACT_APP_API_URL || "http://localhost:5007";
           const response = await axios.get(
             `${AUTH_API_URL}/api/auth/user/${userId}`,
           );
