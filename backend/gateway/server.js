@@ -43,11 +43,18 @@ const authServiceProxy = createProxyMiddleware({
     "^/api/auth": "/api/auth", // Generic rewrite for all auth routes
   },
   onProxyReq: (proxyReq, req, res) => {
+    console.log(
+      "=================== GATEWAY AUTH PROXY DEBUG ===================",
+    );
+    console.log(`Original Request Method: ${req.method}`);
     console.log(`Original URL: ${req.originalUrl}`);
     console.log(`Proxy Path: ${proxyReq.path}`);
-    console.log(`Proxy Host: ${proxyReq.getHeader("host")}`);
+    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
+    console.log(`Request Body: ${JSON.stringify(req.body)}`);
+    console.log(
+      "==============================================================",
+    );
 
-    // Log request body
     const bodyData = JSON.stringify(req.body);
     proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
     proxyReq.write(bodyData);
