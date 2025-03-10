@@ -166,7 +166,7 @@ const CreateClient = () => {
         if (userId && token) {
           // Use the full URL for the auth-service
           const response = await fetch(
-            `http://localhost:5007/api/auth/users/${userId}`,
+            `${process.env.REACT_APP_API_URL}/api/auth/users/${userId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
