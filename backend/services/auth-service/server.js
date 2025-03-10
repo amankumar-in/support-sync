@@ -29,6 +29,13 @@ mongoose
 // Mount routes
 app.use("/api/auth", authRoutes);
 
+app.use((req, res, next) => {
+  console.log("AUTH SERVICE MIDDLEWARE");
+  console.log(`Incoming Method: ${req.method}`);
+  console.log(`Path: ${req.path}`);
+  next();
+});
+
 // Health check route
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "Auth service is running" });
