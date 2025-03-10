@@ -70,7 +70,7 @@ jobs:
             matrix.service == 'chatbot-service' && secrets.CHATBOT_SERVICE_ENV
           }}
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
           # Specific path handling based on service
           if [ "${{ matrix.service }}" == "gateway" ]; then
             cd ~/support-sync/backend/gateway
