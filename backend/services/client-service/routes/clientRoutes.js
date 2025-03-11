@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
     if (organizationId) {
       // Instead of directly querying the Organization model,
       // call the auth-service endpoint to get the org _id
-      const lookupUrl = `http://localhost:5007/api/auth/organizations/lookup/${organizationId}`;
+      const lookupUrl = `${process.env.AUTH_SERVICE_URL || "http://localhost:5007"}/api/auth/organizations/lookup/${organizationId}`;
 
       const orgResponse = await fetch(lookupUrl);
       if (!orgResponse.ok) {
@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
     let organizationId;
 
     if (organizationUuid) {
-      const lookupUrl = `${process.env.AUTH_SERVICE_URL}/api/auth/organizations/lookup/${organizationId}`;
+      const lookupUrl = `${process.env.AUTH_SERVICE_URL || "http://localhost:5007"}/api/auth/organizations/lookup/${organizationUuid}`; // do not change to organizationId
       console.log("Attempting to fetch from URL:", lookupUrl);
 
       try {
